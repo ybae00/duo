@@ -2,6 +2,20 @@
 
 Read this before writing code for Duo. The product spec is [prd.md](prd.md). The platform research notes are kept outside this repository.
 
+## Current scope — minimal manual guessing (19 October 2026)
+
+The user replaced the original timed/scored rules. The current PRD takes precedence over the historical architecture and milestones below.
+
+- **Start → target → fold → Done → frozen actual-vs-target result → Start.** No time limit, hold-to-match, points, fixed run length, difficulty, live-angle meter, settings, or feedback.
+- The result shows a small **% off**: absolute angle error / absolute target × 100. Zero-target relative error is undefined unless the actual angle is also zero.
+- `GuessSession` is the active headless engine. It has no gameplay clock. Old `MatchJudge`, `RunEngine`, and `Scoring` remain isolated from the active app; do not restore them to gameplay.
+- Retain a still reading without an age deadline. Invalidate on unavailable/unknown/invalid input or scene inactivity, and require a new reading on recovery. Never complete a guess without Done.
+- Keep the required one-time calibration and save only its range. The active app no longer reads or writes old score/settings keys; do not delete that existing local data.
+- Preserve the diagnostic probe. Keep changes local unless the user asks for a push/PR.
+- The [manual-flow simulator test](../internal/manual-guess-simulator-2026-10-19.md) passed the focused Start → Done flow; consult its coverage gaps. Prior timed-game recordings do not validate the new rules.
+
+The environment caveats below describe the original authoring environment. This session is on macOS with Xcode 27.1 and iOS 27.1 available; select it with `DEVELOPER_DIR=/Applications/Xcode-27.1.app/Contents/Developer` rather than changing global Xcode selection.
+
 Duo is a native iPhone game. It shows a target angle, and the player folds iPhone Duo until the hinge matches it. The hinge is the only input.
 
 ## 1. Ground rules
