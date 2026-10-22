@@ -1,6 +1,6 @@
 # Duo — Minimal Prototype Requirements
 
-Status: 19 October 2026. These rules replace the earlier timed, scored, five-round prototype. Nothing here has been validated on physical hardware.
+Status: 21 October 2026. These rules replace the earlier timed, scored, five-round prototype. Nothing here has been validated on physical hardware.
 
 Build instructions: [agent.md](agent.md).
 
@@ -15,29 +15,29 @@ Duo is a native Swift/SwiftUI app for iPhone Duo and iOS 27.1. The physical hing
 1. The ready screen has one button: **Start**.
 2. Start chooses and displays a whole-degree target within the calibrated playable range.
 3. The player folds the phone for as long as they want. Show no live angle, warmer/colder meter, countdown, points, or hold progress.
-4. The guessing screen has one button: **Done**. Reaching the target never completes the guess automatically.
-5. Done snapshots the latest valid hinge angle. Display the target and actual angle, with a small percentage beside the actual angle.
-6. The result stays frozen even if the player moves the hinge. Its only action is **Start**, which begins another independent guess.
+4. The guessing screen has a **Done** action (duplicated on the two edges of inner layouts for reachability). Reaching the target never completes the guess automatically.
+5. Done snapshots the latest valid hinge angle. Display the actual angle next to the target, or toggle to the closeness percentage out of 100%.
+6. The result stays frozen even if the player moves the hinge. Its **Done** action returns to the Start screen without generating another target; only Start begins another independent guess.
 
 There is no time limit, scoring, tolerance requirement, hold duration, difficulty, fixed round count, run summary, history screen, settings screen, or sound/haptic feedback in this version. A new random target may equal a previous target; no spacing rule is needed.
 
 ## 3. Result percentage
 
-Label it **% off**, not a score or an ambiguous accuracy percentage:
+The alternate result view shows closeness to the target, not a point score. Calculate from the unrounded actual angle:
 
 \[
-\text{percentage off} = \frac{|\text{actual} - \text{target}|}{|\text{target}|} \times 100
+\text{closeness} = 100 \times \max\!\left(0, 1 - \frac{|\text{actual} - \text{target}|}{|\text{target}|}\right)
 \]
 
-For example, target 90° and actual 81° gives **81.0° (10.0% off)**; actual 99° is also 10.0% off. An exact guess is 0% off. Percentages can exceed 100%; they are relative error, not points.
+For example, target 50° and actual 49° gives **98% / 100%**. Target 90° and actual 81° (or 99°) gives 90% / 100%; an exact guess gives 100% / 100%. Cap at 0% for a miss larger than the target magnitude.
 
-Show the actual angle and percentage to one decimal place; calculate using the unrounded reading. A target of zero has undefined relative error unless the actual angle is also zero: show a dash for the percentage, or 0% for an exact zero. Do not assume calibration can never include zero or negative angles.
+Show the actual angle to one decimal place and the closeness percentage rounded to a whole percent. A target of zero has undefined relative closeness unless the actual angle is also zero: disable the percentage toggle for an inexact zero-target guess, or show 100% for an exact zero. Do not assume calibration can never include zero or negative angles. The result begins in degrees and the toggle offers **View in percentage** / **View in degrees**.
 
 ## 4. Necessary hinge setup
 
 Apple does not publish the numeric hinge range; never assume 0°–180° on hardware.
 
-- On first use, Start opens a two-step setup: close fully, then open flat. Only setup shows a live angle.
+- On first use, Start opens a two-step setup: close fully → Next → open flat → Start. Only setup shows a live angle.
 - Collect observed readings and trim provisional 8° margins at both ends. Require at least a provisional 40° playable span.
 - Completion saves the range locally and starts the first guess.
 - Missing a final callback while fully closed must not block setup. Use the lowest valid observed reading.
@@ -68,9 +68,9 @@ These numbers are provisional until hardware testing.
 
 - Unit tests cover manual-only completion, no hold/deadline, latest-reading submission, frozen results, invalidation/recovery, percentage math including zero, calibrated target selection, and continuing beyond five guesses.
 - Core tests, strict Swift-format lint, and both native simulator builds pass.
-- A new simulator playthrough must check Start → target → genuine hinge movement → Done → correctly calculated result → Start again.
-- During that playthrough, wait beyond the old 15-second timeout and 30-second stale threshold while still, then verify Done still works. Also check that the live angle is hidden, a fold does not reset the target, and results do not change with further movement.
-- Prior timed-game recordings are historical evidence, not validation of these new rules. The intermittent black simulator surface from those runs has no confirmed cause.
+- The updated Figma screens passed a native iPhone Duo / iOS 27.1 simulator playthrough: fresh calibration, Start → target → genuine hinge movement → Done → both frozen result views → Done → Start again, including both wide/tall Done controls and closed outer submission.
+- A 35-second stationary pause did not end the guess; Done still worked afterward. The live angle stayed hidden, folding did not reset the target, and further movement did not change the submitted result. Maximum accessibility text retained complete result values in outer, wide, and tall layouts.
+- Prior timed-game recordings are historical evidence, not validation of these new rules. Black surfaces recurred during opening and recovered after releasing fully open; the cause remains unconfirmed.
 - Hardware accuracy, range, feel, display transitions, and reduced-size/Split View behavior still need physical-device testing before release.
 
 ## 8. Deferred

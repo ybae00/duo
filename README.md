@@ -9,13 +9,15 @@ A native iPhone game for iPhone Duo. The player folds the phone to match a promp
 
 `Duo/Duo.xcodeproj` is the native game, separate from the unchanged diagnostic probe below. Its iOS 27.1 target and local `DuoCore` dependency were created in Xcode 27.1.
 
-**Start → target → fold by feel → Done → actual angle vs. target → Start again.**
+**Start → target → fold by feel → Done → actual vs. target → Done → Start again.**
 
-The ready/result screens have one Start button; the guessing screen has one Done button. There is no countdown, point score, automatic matching, hold requirement, live-angle hint, difficulty, five-round run, settings, or history screen.
+The ready screen has Start; the guessing screen has Done; result Done returns to Start without choosing another target. The wide/tall guessing layouts offer Done on both accessible sides. There is no countdown, point score, automatic matching, hold requirement, live-angle hint, difficulty, five-round run, settings, or history screen.
 
-Results show the actual angle, the target, and a small **% off** beside the actual angle. Percentage off is absolute error divided by the absolute target, multiplied by 100. Target 90° and actual 81° gives 10.0% off; an exact guess gives 0.0% off. Zero-target relative error is shown as a dash unless the guess is exactly zero. Results stay frozen while the phone moves.
+Results show the actual angle beside the target, with a **View in percentage / View in degrees** toggle. Percentage is closeness: 100% × max(0, 1 − absolute error / absolute target), rounded for display. Target 50° and actual 49° gives 98% / 100%; an exact guess gives 100% / 100%. An inexact zero target has no meaningful relative percentage and disables the toggle. The same result stays frozen while the phone moves.
 
-On first use, Start opens a one-time calibration: close fully → Continue → open flat → Start. Setup alone shows the live angle. The observed range has provisional margins and an insufficient range offers retry; no hardware 0°–180° range is assumed. Calibration is saved in `UserDefaults` and reused on later launches. Current guesses/results are not restored after app termination. Old score/settings data is preserved but ignored.
+The actual result counts up from zero over 0.45 seconds when first shown, while the target stays still. Changing layouts or toggling units does not replay it. Reduce Motion shows the final value immediately.
+
+On first use, Start opens a one-time calibration: close fully → Next → open flat → Start. Setup alone shows the live angle. The observed range has provisional margins and an insufficient range offers retry; no hardware 0°–180° range is assumed. Calibration is saved in `UserDefaults` and reused on later launches. Current guesses/results are not restored after app termination. Old score/settings data is preserved but ignored.
 
 `DuoApp` owns `GameModel` above replaceable views. The headless `GuessSession` accepts a result only when Done is pressed. There is no gameplay clock or reading-age deadline: a stationary reading remains usable while active. A nil/unknown/invalid hinge reading or scene inactivity clears it; recovery needs a new valid callback without resetting the target. Missing readings show an immediate alert on Done. A one-shot five-second first-context wait precedes the no-hinge screen; it does not limit a guess.
 
@@ -30,7 +32,9 @@ xcodebuild -project Duo/Duo.xcodeproj -scheme Duo \
   -derivedDataPath DerivedData CODE_SIGNING_ALLOWED=NO build
 ```
 
-The [recorded manual-flow simulator test](internal/manual-guess-simulator-2026-10-19.md) passed Start → Done, a 53-second stationary pause, percentage calculations, frozen results, background recovery, and calibration reuse after relaunch. Fresh calibration in the new UI, zero/invalid-reading presentation, hardware, and Split View remain unverified. Earlier [timed-game simulator results](internal/game-simulator-2026-10-19.md) are historical. The prior intermittent black display did not recur, but its cause remains unresolved.
+The updated Figma screens passed native iPhone Duo / iOS 27.1 simulator checks: fresh calibration, Start → target → genuine hinge movement → Done, a 35-second stationary pause, frozen results, the closeness toggle, result Done returning to Start, and both edge controls. Maximum accessibility text shows complete results in outer, inner-wide, and inner-tall layouts; the actual and target stack vertically at accessibility sizes. Hardware and Split View remain unverified. Black surfaces recurred during opening and recovered when the drag was released fully open; the cause remains unresolved. The earlier [manual-flow test](internal/manual-guess-simulator-2026-10-19.md) used % off and the old result navigation, and the [timed-game results](internal/game-simulator-2026-10-19.md) are historical.
+
+See the [Figma simulator validation record](internal/figma-ui-simulator-2026-10-22.md) for observations and remaining gaps.
 
 ## Milestone 1: hinge probe
 

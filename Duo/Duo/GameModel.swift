@@ -20,6 +20,8 @@ final class GameModel {
     var range: PlayableRange?
     var session: GuessSession?
     var message: String?
+    var resultShowsPercentage = false
+    private(set) var resultHasBeenRevealed = false
     private var calibrationReading: HingeReading?
     private(set) var waitingSince = ProcessInfo.processInfo.systemUptime
 
@@ -93,6 +95,7 @@ final class GameModel {
 
     func start() {
         guard active, hasHinge == true, screen != .guess else { return }
+        resultShowsPercentage = false
         message = nil
         guard range != nil else {
             startCalibration()
@@ -113,7 +116,26 @@ final class GameModel {
             return
         }
         message = nil
+        resultShowsPercentage = false
+        resultHasBeenRevealed = false
         screen = .result
+    }
+
+    func revealResult() {
+        guard screen == .result, !resultHasBeenRevealed else { return }
+        resultHasBeenRevealed = true
+    }
+
+    func toggleResultView() {
+        guard screen == .result, result?.percentageCloseness != nil else { return }
+        resultShowsPercentage.toggle()
+    }
+
+    func returnToStart() {
+        guard screen == .result else { return }
+        resultShowsPercentage = false
+        message = nil
+        screen = .home
     }
 
     func startCalibration() {
