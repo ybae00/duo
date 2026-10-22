@@ -2,12 +2,12 @@
 
 Read this before writing code for Duo. The product spec is [prd.md](prd.md). The platform research notes are kept outside this repository.
 
-## Current scope — minimal manual guessing (19 October 2026)
+## Current scope — minimal manual guessing (21 October 2026)
 
 The user replaced the original timed/scored rules. The current PRD takes precedence over the historical architecture and milestones below.
 
-- **Start → target → fold → Done → frozen actual-vs-target result → Start.** No time limit, hold-to-match, points, fixed run length, difficulty, live-angle meter, settings, or feedback.
-- The result shows a small **% off**: absolute angle error / absolute target × 100. Zero-target relative error is undefined unless the actual angle is also zero.
+- **Start → target → fold → Done → frozen result → Done → Start.** Result Done returns to Start without choosing a target. No time limit, hold-to-match, points, fixed run length, difficulty, live-angle meter, settings, or feedback.
+- The result toggles between actual/target degrees and closeness out of 100%. Closeness is 100 × max(0, 1 − absolute error / absolute target), rounded for display. Zero-target closeness is undefined unless the actual angle is also zero (100%).
 - `GuessSession` is the active headless engine. It has no gameplay clock. Old `MatchJudge`, `RunEngine`, and `Scoring` remain isolated from the active app; do not restore them to gameplay.
 - Retain a still reading without an age deadline. Invalidate on unavailable/unknown/invalid input or scene inactivity, and require a new reading on recovery. Never complete a guess without Done.
 - Keep the required one-time calibration and save only its range. The active app no longer reads or writes old score/settings keys; do not delete that existing local data.

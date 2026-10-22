@@ -3,7 +3,6 @@ import SwiftUI
 
 private enum Theme {
     static let background = Color.white
-    static let surface = Color(red: 0.94, green: 0.97, blue: 1)
     static let ink = Color(red: 0.11, green: 0.11, blue: 0.12)
     static let muted = Color(red: 0.40, green: 0.40, blue: 0.43)
     static let accent = Color(red: 0, green: 0.40, blue: 0.80)
@@ -13,30 +12,34 @@ struct ContentView: View {
     let model: GameModel
 
     var body: some View {
-        HingeLayout {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    Text("DUO")
-                        .font(.system(size: 18, weight: .semibold))
-                    if model.hasHinge == false {
-                        unavailable
-                    } else if model.hasHinge == nil {
-                        waiting
-                    } else {
-                        switch model.screen {
-                        case .home: home
-                        case .calibration: calibration
-                        case .guess: guess
-                        case .result: result
+        Group {
+            if isHome {
+                HingeLayout {
+                    StartScreen { model.start() }
+                } companion: {
+                    companion
+                }
+            } else if model.hasHinge == true {
+                FoldGameScreen(model: model)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 28) {
+                        Text("DUO")
+                            .font(.system(size: 18, weight: .semibold))
+                        if model.hasHinge == false {
+                            unavailable
+                        } else {
+                            waiting
                         }
                     }
+                    .padding(22)
+                    .frame(maxWidth: 560, alignment: .leading)
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(22)
-                .frame(maxWidth: 560, alignment: .leading)
-                .frame(maxWidth: .infinity)
+                .scrollIndicators(.hidden)
             }
-            .scrollIndicators(.hidden)
         }
+        .ignoresSafeArea(.container, edges: isHome || model.hasHinge == true ? .all : [])
         .background(Theme.background.ignoresSafeArea())
         .foregroundStyle(Theme.ink)
         .tint(Theme.accent)
@@ -57,98 +60,14 @@ struct ContentView: View {
         }
     }
 
-    private var home: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            heading("Guess the angle.")
-            description("Start, fold your phone to the target, then tap Done.")
-            primary("Start") { model.start() }
-        }
+    private var isHome: Bool {
+        model.hasHinge == true && model.screen == .home
     }
 
-    private var guess: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            heading("Make this angle.")
-            VStack(alignment: .leading, spacing: 8) {
-                label("TARGET")
-                Text(model.target.map { "\($0)°" } ?? "—")
-                    .font(.system(size: 64, weight: .medium))
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                    .accessibilityIdentifier("guess-target")
-            }
-            .padding(22)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundStyle(Theme.accent)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16))
-            description("Take your time. Tap Done when it feels right.")
-            primary("Done") { model.done() }
-        }
-    }
-
-    private var result: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            heading("Your guess.")
-            if let result = model.result {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        label("TARGET")
-                        Text("\(result.target)°")
-                            .font(.system(size: 28, weight: .medium))
-                            .monospacedDigit()
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        label("ACTUAL")
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Text(String(format: "%.1f°", result.actual))
-                                .font(.system(size: 44, weight: .medium))
-                                .foregroundStyle(Theme.accent)
-                                .minimumScaleFactor(0.5)
-                                .accessibilityIdentifier("guess-actual")
-                            Text(result.percentageOff.map { String(format: "%.1f%% off", $0) } ?? "—% off")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Theme.muted)
-                                .accessibilityIdentifier("guess-percentage")
-                        }
-                        .monospacedDigit()
-                        .lineLimit(1)
-                    }
-                }
-            }
-            primary("Start") { model.start() }
-        }
-    }
-
-    private var calibration: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            label("ONE-TIME HINGE SETUP")
-            if model.calibration.phase == .closing {
-                heading("Close it fully.")
-                description("Close your phone all the way, then continue.")
-                calibrationReading
-                primary("Continue") { model.beginOpening() }
-            } else {
-                heading("Open it flat.")
-                description("Open your phone fully so Duo can measure its range.")
-                calibrationReading
-                if model.calibrationError == nil {
-                    primary("Start") { model.finishCalibration() }
-                }
-            }
-            if let error = model.calibrationError {
-                description(calibrationMessage(error))
-                primary("Retry setup") { model.startCalibration() }
-            }
-        }
-    }
-
-    private var calibrationReading: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            label("HINGE ANGLE")
-            Text(model.calibrationAngleText)
-                .font(.system(size: 28, weight: .medium))
-                .monospacedDigit()
-        }
+    private var companion: some View {
+        StartFoldIllustration()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityHidden(true)
     }
 
     private var unavailable: some View {
@@ -172,10 +91,6 @@ struct ContentView: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func label(_ text: String) -> some View {
-        Text(text).font(.system(size: 11, weight: .medium))
-    }
-
     private func description(_ text: String) -> some View {
         Text(text).font(.system(size: 14)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
@@ -192,18 +107,11 @@ struct ContentView: View {
         }
         .buttonStyle(.plain)
     }
-
-    private func calibrationMessage(_ error: CalibrationFailure) -> String {
-        switch error {
-        case .noReadings: "No hinge readings yet. Move the phone and retry setup."
-        case .noOpeningReading: "No opening reading yet. Retry setup and open fully."
-        case .rangeTooNarrow: "The measured range is too small. Retry setup, closing and opening fully."
-        }
-    }
 }
 
-private struct HingeLayout<Content: View>: View {
+private struct HingeLayout<Content: View, Companion: View>: View {
     @ViewBuilder var content: Content
+    @ViewBuilder var companion: Companion
 
     var body: some View {
         GeometryReader { geometry in
@@ -230,15 +138,5 @@ private struct HingeLayout<Content: View>: View {
                 content
             }
         }
-    }
-
-    private var companion: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "rectangle.split.2x1").font(.system(size: 24, weight: .thin))
-            Text("DUO").font(.system(size: 24, weight: .semibold))
-            Text("ONE MOVE. TWO HALVES.").font(.system(size: 9, weight: .medium))
-        }
-        .foregroundStyle(Theme.accent).padding(10).frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityHidden(true)
     }
 }

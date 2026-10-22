@@ -144,6 +144,18 @@ private func fixedTargetSession() throws -> GuessSession {
     #expect(GuessResult(target: 0, actual: 1)?.percentageOff == nil)
 }
 
+@Test func percentageViewShowsClosenessNotPointsOrPercentageOff() throws {
+    #expect(GuessResult(target: 90, actual: 90)?.percentageCloseness == 100)
+    #expect(GuessResult(target: 90, actual: 81)?.percentageCloseness == 90)
+    #expect(GuessResult(target: 90, actual: 99)?.percentageCloseness == 90)
+    #expect(GuessResult(target: 50, actual: 49)?.percentageCloseness == 98)
+    #expect(GuessResult(target: 30, actual: 120)?.percentageCloseness == 0)
+    #expect(GuessResult(target: -90, actual: -81)?.percentageCloseness == 90)
+    #expect(GuessResult(target: 0, actual: 0)?.percentageCloseness == 100)
+    #expect(GuessResult(target: 0, actual: 1)?.percentageCloseness == nil)
+    #expect(GuessResult(target: 1, actual: .greatestFiniteMagnitude)?.percentageCloseness == 0)
+}
+
 @Test func invalidComparisonNumbersAreNeverDisplayedAsResults() {
     #expect(GuessResult(target: 90, actual: .nan) == nil)
     #expect(GuessResult(target: 90, actual: .infinity) == nil)

@@ -12,6 +12,12 @@ public struct GuessResult: Equatable, Sendable {
         return percentage.isFinite ? percentage : nil
     }
 
+    public var percentageCloseness: Double? {
+        guard target != 0 else { return error == 0 ? 100 : nil }
+        let relativeError = error / abs(Double(target))
+        return (1 - min(relativeError, 1)) * 100
+    }
+
     public init?(target: Int, actual: Double) {
         guard actual.isFinite, abs(actual - Double(target)).isFinite else { return nil }
         self.target = target
